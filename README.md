@@ -59,9 +59,14 @@ Github 上的 README 一般是用 Markdown 编写的，所以后缀名是 .md �
 
 ### 贡献人员
 
-感谢所有贡献的人。
 
-[@sunnny516](https://github.com/sunnny516)
+感谢所有贡献的人，一起帮我维护这座屎山。
+
+<a href="https://github.com/eryajf/learn-github/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=sunnny516/learn-github" />
+</a>
+
+
 
 ## 开源协议
 
