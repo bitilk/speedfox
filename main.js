@@ -716,22 +716,6 @@ ipcMain.on('ping', (event, arg) => {
 
 
 
-// 本地服务器速度
-ipcMain.on('NET_speed', (event, arg) => {
-  request('http://127.114.233.8:16088/metrics', (err, res, body) => {
-    if (err) { 
-        return console.log(err); 
-    }
-
-    // console.log(body);
-     mainWindow.webContents.send('NET_speed-reply', body);// 发送基座信息给渲染层
-  });
-})
-
-
-
-
-
 // 写入配置文件
 ipcMain.on('speed_code_config', (event, arg) => {
   // console.log(arg); // 打印来自渲染进程的消息
