@@ -41,9 +41,7 @@ Github 上的 README 一般是用 Markdown 编写的，所以后缀名是 .md �
 
 除上述的之外，还可以根据自己的具体项目进行调整增添删减。也可以适当在 README 中加入徽章，例如本文件的开头的：
 
-[![](https://img.shields.io/badge/%E4%B8%BB%E9%A1%B5-sunyctf%2FChineseREADME-orange)](https://github.com/sunyctf/ChineseREADME)
 
-你可以在 [shields](https://shields.io) 中自己创作。
 
 ## 相关项目
 
@@ -51,21 +49,21 @@ Github 上的 README 一般是用 Markdown 编写的，所以后缀名是 .md �
 
 ## 主要项目负责人
 
-[@Andy](https://github.com/sunyctf)
+[@sunnny516](https://github.com/sunnny516)
 
 ## 参与贡献方式
 
-[![](https://img.shields.io/badge/%E7%94%B3%E8%AF%B7-Pull%20Request-orange)](https://github.com/sunyctf/ChineseREADME/pulls)
+[![](https://img.shields.io/badge/%E7%94%B3%E8%AF%B7-Pull%20Request-orange)](https://github.com/sunnny516/speedfox/pulls)
 
-提交 [PR](https://github.com/sunyctf/ChineseREADME/pulls) 申请，我会视情况通过。
+提交 [PR](https://github.com/sunnny516/speedfox/pulls) 申请，我会视情况通过。
 
 ### 贡献人员
 
 感谢所有贡献的人。
 
-[@Andy](https://github.com/sunyctf)
+[@sunnny516](https://github.com/sunnny516)
 
 ## 开源协议
 
-[MIT](LICENSE) © Andy
+[MIT](LICENSE) © Speed Fox
 
