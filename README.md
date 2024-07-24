@@ -1,8 +1,15 @@
-# SpeedFox 极狐游戏加速器
+![speed_logo_black_background](https://github.com/user-attachments/assets/aed5aa60-575a-4d1c-9878-bb3f7f0073e5)
 
+# SpeedFox 极狐游戏加速器
 [![](https://img.shields.io/badge/项目主页-SpeedFox-blue)](https://github.com/sunnny516/speedfox)
+[![](https://img.shields.io/badge/极狐官网-SpeedFox-black)](https://www.jihujiasuqi.com/)
+[![构建状态](https://img.shields.io/github/actions/workflow/status/sunnny516/speedfox/build.yml.svg?branch=SpeedFoxV4)](https://github.com/sunnny516/speedfox/actions?query=workflow:ci)
 
 懒得写，晚点补作业
+
+## 项目特点 ✨
+
+Todo
 
 ## 目录
 
