@@ -17,8 +17,8 @@
           "settings": {
             "servers": [
               {
-                "address": "jp1.dongbang.jihujiasuqi.com",
-                "port": 40599,
+                "address": "111.173.76.48",
+                "port": 43905,
                 "method": "aes-128-gcm",
                 "password": "a48ed43872014e50"
               }

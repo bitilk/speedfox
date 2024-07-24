@@ -557,11 +557,7 @@ app.on('activate', function () {
 
 
 function Ping(host , timeout , C ,pingid){
- 
-  const options = {
-      timeout: timeout,       // 超时时间，单位为秒
-      extra: ['-c', C] // 发送5次ping请求
-  };
+
   port = host.split(":")[1];
   host = host.split(":")[0];
 
