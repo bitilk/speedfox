@@ -202,6 +202,9 @@ function taskkillall() {
   taskkill("SpeedFox.tun2socks.exe")
   taskkill("sniproxy.exe")
   taskkill("SpeedNet_brook.exe")
+
+
+  
 }
 
 // 监听控制台日志消息并写入文件
@@ -354,13 +357,8 @@ ipcMain.on('window', (event, arg) => {
 
   }
   if(arg[0] == "load"){
-    if(arg[1] == "show"){
-      loadWindow.show()
-    }else{
       loadWindow.hide()
       loadWindow.close()
-
-    }
   }
 
 
@@ -642,6 +640,8 @@ function app_exit() {
   mainWindow.show()
   mainWindow.focus()
 
+  taskkillall()  //乱七八糟的全关了
+
   // 直接退出了
   app.isQuiting = true
   app.quit();
@@ -729,17 +729,6 @@ ipcMain.on('NET_speed', (event, arg) => {
 })
 
 
-// 远程服务器速度
-ipcMain.on('NET_speed_server', (event, arg) => {
-  request('http://' + arg.ip + '/metrics', (err, res, body) => {
-    if (err) { 
-        return console.log(err); 
-    }
-
-    // console.log(body);
-     mainWindow.webContents.send('NET_speed_server-reply', body);// 发送基座信息给渲染层
-  });
-})
 
 
 
@@ -775,7 +764,6 @@ ipcMain.on('speed_code_config', (event, arg) => {
     return;
   }
 
-  console.log(`新启动===================================================================================`);
   // 处理nf2配置
   nf2_config = Buffer.from(arg.Game_config.nf2_config, 'base64').toString('utf-8')
   const dataArray = nf2_config.split("\n");
@@ -830,7 +818,7 @@ ipcMain.on('speed_code_config', (event, arg) => {
 
   if(arg.code_mod == "v2ray"){
     
-    Fox_writeFile(path.join(localesPath, 'resources\\bin\\SpeedNet_V2.json'),arg.v2config) // 写入v2ray配置
+    Fox_writeFile(path.join(myAppDataPath, 'SpeedNet_V2.json'),arg.v2config) // 写入v2ray配置
     const v2ray_exe = exec('"' + path.join(localesPath, 'resources\\bin\\SpeedNet_V2.exe') + '"' +" run -c " + '"' + path.join(localesPath, 'resources\\bin\\SpeedNet_V2.json' + '"'));
 
 
@@ -853,11 +841,12 @@ ipcMain.on('speed_code_config', (event, arg) => {
     });
 
   }
-
+  Fox_writeFile(path.join(myAppDataPath, 'SpeedNet_V2.json'),"") // 清理v2ray配置
 
   //////////////////////////////////////////////////////////////////////
   // 启动加速模块
   // setTimeout(function(){
+
     const SpeedProxy = exec('"' + path.join(localesPath, 'resources\\bin\\SpeedProxy.exe') + '"' +" " + arg.mode);
     
     // 监听子进程的标准输出数据
