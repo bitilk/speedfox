@@ -1,0 +1,38 @@
+
+    {
+      "inbounds": [
+        {
+          "port": 16780,
+          "protocol": "socks",
+          "listen": "127.0.0.1",
+          "settings": {
+            "auth": "noauth",
+            "udp": true
+          }
+        }
+      ],
+      "outbounds": [
+        {
+          "protocol": "shadowsocks",
+          "settings": {
+            "servers": [
+              {
+                "address": "jp1.dongbang.jihujiasuqi.com",
+                "port": 40599,
+                "method": "aes-128-gcm",
+                "password": "a48ed43872014e50"
+              }
+            ],
+            "port": 0,
+            "plugin": "",
+            "pluginOpts": "",
+            "mtu": 0
+          },
+          "mux": {
+            "enabled": false,
+            "concurrency": 0
+          }
+        }
+      ]
+    }
+    

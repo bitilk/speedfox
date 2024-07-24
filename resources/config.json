@@ -1,0 +1,19 @@
+{
+    "备注":"该区域是配置文件，如果你要贴牌或自己魔改，请根据教程修改，若不是，请勿修改此文件",
+
+    "app":{
+        "ui_url":"https://api.jihujiasuqi.com/app_ui/pc/home.php?&demo_watermark=&Dev=1",
+        "product":"speedfox",
+        "load_File":"resources\\static\\load\\speedfox_load\\index.html"
+    },
+    "window_config":{
+        "ui":{
+            "width":1000,
+            "height":700
+        },
+        "load":{
+            "width":600,
+            "height":600
+        }
+    }
+}

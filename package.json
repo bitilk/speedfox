@@ -1,0 +1,69 @@
+{
+  "name": "speedfox",
+  "version": "4.0.4",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "install": "npm install",
+    "build": "npm install jsbn && electron-builder"
+  },
+  "build": {
+    "productName": "极狐游戏加速器",
+    "appId": "com.speedfox.run",
+    "copyright": "Copyright © 2021 极狐游戏加速器全套解决方案供应商",
+    "electronVersion": "30.0.9",
+    "directories": {
+      "output": "build"
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "http://api.jihujiasuqi.com/"
+    },
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    },
+    "win": {
+      "icon": "resources/static/logo/speedfox.ico",
+      "requestedExecutionLevel": "highestAvailable",
+      "sign": "beforeBuild.js"
+    },
+    "files": [
+      "!resources",
+      "!.gitee",
+      "!README.*",
+      "!*.py"
+    ],
+    "extraResources": [
+      {
+        "from": "./resources/",
+        "to": ""
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowElevation": true,
+      "language": "2052",
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "dependencies": {
+    "dgram": "^1.0.1",
+    "electron-updater": "^6.2.1",
+    "jsbn": "^1.1.0",
+    "net": "^1.0.2",
+    "node-stun": "^0.1.2",
+    "ntp-client": "^0.5.3",
+    "request": "^2.88.2",
+    "socks": "^2.8.3",
+    "socks-proxy-agent": "^8.0.4",
+    "stun": "^2.1.0",
+    "systeminformation": "^5.22.11",
+    "traceroute": "^1.0.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.9.1"
+  }
+}
