@@ -46,7 +46,7 @@ npm run start
 
 ## 相关项目
 
-暂无
+[前端UI](https://github.com/sunnny516/SpeedFox_web_ui)
 
 ## 主要项目负责人
 
