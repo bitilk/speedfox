@@ -4,7 +4,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "install": "npm install",
+    "install": "npm install --save-dev electron && npm install electron-updater net request winston winston-daily-rotate-file",
     "build": "npm install jsbn && electron-builder"
   },
   "build": {
@@ -50,22 +50,14 @@
     }
   },
   "dependencies": {
-    "dgram": "^1.0.1",
     "electron-updater": "^6.2.1",
-    "jsbn": "^1.1.0",
     "net": "^1.0.2",
-    "node-stun": "^0.1.2",
-    "ntp-client": "^0.5.3",
     "request": "^2.88.2",
-    "socks": "^2.8.3",
-    "socks-proxy-agent": "^8.0.4",
-    "stun": "^2.1.0",
-    "systeminformation": "^5.22.11",
-    "traceroute": "^1.0.0",
     "winston": "^3.13.1",
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
+    "electron": "^31.3.0",
     "electron-builder": "^24.9.1"
   }
 }
