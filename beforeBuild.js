@@ -6,7 +6,7 @@ exports.default = async function(configuration) {
     // console.log('签名',configuration , configuration["path"]);
     // ukey 密码：1234567890
     
-    签名(configuration) // 如果不签名，就注释掉这行
+    签名(configuration) // 如果不签名，就注释掉这行 再去 package.json 删除签名相关
 
 }
 
