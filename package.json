@@ -61,7 +61,9 @@
     "socks-proxy-agent": "^8.0.4",
     "stun": "^2.1.0",
     "systeminformation": "^5.22.11",
-    "traceroute": "^1.0.0"
+    "traceroute": "^1.0.0",
+    "winston": "^3.13.1",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "electron-builder": "^24.9.1"

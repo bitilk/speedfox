@@ -803,7 +803,7 @@ ipcMain.on('speed_code_config', (event, arg) => {
   if(arg.code_mod == "v2ray"){
     
     Fox_writeFile(path.join(myAppDataPath, 'SpeedNet_V2.json'),arg.v2config) // 写入v2ray配置
-    const v2ray_exe = exec('"' + path.join(localesPath, 'resources\\bin\\SpeedNet_V2.exe') + '"' +" run -c " + '"' + path.join(localesPath, 'resources\\bin\\SpeedNet_V2.json' + '"'));
+    const v2ray_exe = exec('"' + path.join(localesPath, 'resources\\bin\\SpeedNet_V2.exe') + '"' +" run -c " + '"' + path.join(myAppDataPath, 'SpeedNet_V2.json' + '"'));
 
 
     // 监听子进程的标准输出数据
