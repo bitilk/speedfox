@@ -1,9 +1,8 @@
 const { app, BrowserWindow, Tray, Menu , ipcMain, dialog } = require('electron');
-const { autoUpdater } = require('electron-updater');
 
 const path = require('path');
 const fs = require('fs');
-const { spawn, exec } = require('child_process');
+const { spawn, exec ,execFile } = require('child_process');
 const os = require('os');
 
 const request = require('request');
@@ -33,6 +32,16 @@ const logger = winston.createLogger({
 var localesPath = process.cwd();
 var silent = false;
 
+/***  错误不弹出  ***/
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+/***  错误不弹出  ***/
+
+
 process.argv.forEach(function (item, index, array) {
   if (item.includes("-workdir")) {
     argv = item.split("=");
@@ -44,7 +53,6 @@ process.argv.forEach(function (item, index, array) {
   }
 });
 
-const app_config = require(path.join(localesPath, "resources\\config.json"));
 const {KillAllProcess} = require('./helper/process');
 
 const appVersion = app.getVersion();
@@ -79,14 +87,17 @@ if (!instanceLock) {
 // 性能优化
 app.commandLine.appendSwitch('disable-gpu-vsync'); // 禁用垂直同步
 app.commandLine.appendSwitch('max-gum-fps', '30'); // 设置最大帧率为30 似乎没用?
+app.commandLine.appendSwitch('no-proxy-server');// 禁用代理
+
 // 合并渲染进程
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('process-per-site');
 app.commandLine.appendSwitch('lang', 'en-US');
 
 var startUpTimeout;
-
+var myAppDataPath;
 app.on('ready', () => {
+  myAppDataPath = app.getPath('appData');
   KillAllProcess();
   batchRemoveHostRecords('# Speed Fox');
   if (!silent) {
@@ -121,8 +132,8 @@ function Fox_writeFile(filePath, textToWrite) {
 
 function CreateLoadingWindow() {
   loadWindow = new BrowserWindow({
-    width: app_config.window_config.load.width,
-    height: app_config.window_config.load.height,
+    width: 600,
+    height: 600,
     transparent: true,// 透明窗口
     frame: false, // 隐藏窗口的标题栏
     show: false, // 隐藏窗口
@@ -148,7 +159,7 @@ function CreateLoadingWindow() {
     }
   });
 
-  loadWindow.loadFile(path.join(localesPath, app_config.app.load_File));
+  loadWindow.loadFile(path.join(localesPath, "bin\\static\\load\\index.html"));
   loadWindow.on('closed', function () {
     loadWindow = null;
   });
@@ -160,8 +171,8 @@ function CreateLoadingWindow() {
 }
 function CreateMainWindow() {
   mainWindow = new BrowserWindow({
-    width: app_config.window_config.ui.width,
-    height: app_config.window_config.ui.height,
+    width: 1000,
+    height: 700,
     frame: false, // 隐藏窗口的标题栏
     transparent: true,// 透明窗口
     show:false, // 隐藏窗口
@@ -177,8 +188,8 @@ function CreateMainWindow() {
       webSecurity:false
     }
   });
-  var ui_url = new URL(app_config.app.ui_url);
-  ui_url.searchParams.append('product', app_config.app.product);
+  var ui_url = new URL("https://api.jihujiasuqi.com/app_ui/pc/home.php?&");
+  ui_url.searchParams.append('product', app.getName());
   ui_url.searchParams.append('silent', silent);
   mainWindow.loadURL(ui_url.href);
   mainWindow.on('closed', function () {
@@ -235,7 +246,7 @@ function tips_Window(data) {
     }
   });
   var tips_url = new URL(data.url);
-  tips_url.searchParams.append('product', app_config.app.product);
+  tips_url.searchParams.append('product', app.getName());
   tipsWindow.loadURL(ui_url.href);
   // tipsWindow.loadURL('https://api.jihujiasuqi.com/app_ui/pc/page/tips/tips.php');
   tipsWindow.on('closed', function () {
@@ -257,7 +268,7 @@ function tips_Window(data) {
 // TODO: 实际上失效
 function socks_test(tag,test_socks) {
   
-  const socks_test = exec(`"${path.join(localesPath, 'resources\\bin\\curl.exe')}" --socks5-hostname ${test_socks} http://www.baidu.com/ -v`);
+  const socks_test = exec(`"${path.join(localesPath, 'bin\\curl.exe')}" --socks5-hostname ${test_socks} http://www.baidu.com/ -v`);
   
   logger.debug(
     `[socks_test] TAG: ${tag} - test_socks: ${test_socks}`
@@ -330,11 +341,6 @@ function batchRemoveHostRecords(tag) {
     logger.info(`[host] 批量记录已删除 tag: ${tag} updatedContent: ${updatedContent}`);
 }
 
-// TODO:
-function checkUpdate() {
-  var app_update_url = 'http://api.jihujiasuqi.com/update/' + app_config.app.product
-
-}
 
 // TODO: should callback when failed
 function OpenExternalProgram(program) {
@@ -424,7 +430,7 @@ ipcMain.on('Tray', (event, arg) => {
     return;
   }
   isTrayOK = true;
-  tray = new Tray(path.join(localesPath, 'resources/static/logo/'+app_config.app.product+'.ico'));
+  tray = new Tray(path.join(localesPath, 'bin/static/logo/'+app.getName()+'.ico'));
   const contextMenu = Menu.buildFromTemplate(
     [
       { label: '显示', click: () => { mainWindow.show(); } },
@@ -493,21 +499,10 @@ ipcMain.on('ping', (event, arg) => {
   Ping(host, timeout, C, pingid);
 });
 
-// 远程服务器速度 TODO: reply err
-ipcMain.on('NET_speed_server', (event, arg) => {
-  request('http://' + arg.ip + '/metrics', (err, res, body) => {
-    if (err) { 
-        logger.error(err); 
-    }
-
-    // console.log(body);
-     mainWindow.webContents.send('NET_speed_server-reply', body);// 发送基座信息给渲染层
-  });
-})
 
 // 写入配置文件
 ipcMain.on('speed_code_config', (event, arg) => {
-  // logger.debug(`[speed_code_config] ${arg}`);
+  logger.debug(`[speed_code_config] ${arg}`);
   // console.log(arg); // 打印来自渲染进程的消息
   if (arg.mode == "taskkill") {
     KillAllProcess();
@@ -525,9 +520,10 @@ ipcMain.on('speed_code_config', (event, arg) => {
 
   // 平台加速host服务
   else if (arg.mode == "sniproxy") {
-    let sni_command = `"${path.join(localesPath, 'resources\\bin\\sniproxy.exe')}"` +
-      " -d -c " + `"${path.join(localesPath, 'resources\\bin\\sniproxy-config.yaml')}"`;
-    const sniproxy_exe = exec(sni_command);
+      const sniproxy_args = [
+        '-d', '-c', path.join(localesPath, 'bin\\sniproxy-config.yaml')
+      ];
+    const sniproxy_exe = execFile(path.join(localesPath, 'bin\\sniproxy.exe'), sniproxy_args);
     // 监听子进程的标准输出数据
     sniproxy_exe.stdout.on('data', (data) => {
       logger.debug(`[sniproxy] ${data}`);
@@ -544,7 +540,7 @@ ipcMain.on('speed_code_config', (event, arg) => {
     datagameconfig = datagameconfig + dataArray[i].replaceAll('\r\n','').replaceAll('\r','') + ",";  // windows 是\r\n linux是 \r
   }
 
-  Fox_writeFile(path.join(localesPath, 'resources\\bin\\config\\game_config_nf2'), datagameconfig); // 写入nf2配置
+  Fox_writeFile(path.join(localesPath, 'bin\\config\\game_config_nf2'), datagameconfig); // 写入nf2配置
 
   net_config = Buffer.from(arg.Game_config.net_config, 'base64').toString('utf-8');
   const dataArray2 = net_config.split("\n");
@@ -554,19 +550,23 @@ ipcMain.on('speed_code_config', (event, arg) => {
   }
   datagameconfig = datagameconfig + "@" + arg.Server_config.ip
 
-  Fox_writeFile(path.join(localesPath, 'resources\\bin\\config\\game_config_wintun'), datagameconfig) // 写入WINTUN配置
+  Fox_writeFile(path.join(localesPath, 'bin\\config\\game_config_wintun'), datagameconfig) // 写入WINTUN配置
 
   mainWindow.webContents.send('speed_code_config-reply', 'OK'); // 发送ok
 
   if(arg.code_mod == "gost") {
     ///////////////////////////////////////////////////////////////////////
     // 启动gost网络连接服务
-    // -api :18080 -metrics=:16088 -L socks5://:16780?udp=true^&limiter.conn.in=256KB^&limiter.conn.out=256KB -F socks5+ws://speedfox:00RY2n01XwMvbmZS@8.217.131.132:56786
-    gost_command = `"${path.join(localesPath, 'resources\\bin\\SpeedNet.exe')}"` +
-    " -api 127.114.233.8:17080 -metrics=127.114.233.8:15088 -L socks5://:16780?udp=true " + 
-    `-F ${arg.Server_config.connect_mode}://${arg.Server_config.method}:${arg.Server_config.token}@${arg.Server_config.ip}:${arg.Server_config.port}`;
-    const gost_exe = exec(gost_command);
-    logger.debug(`gost command: ${gost_command}`);
+
+    const gost_args = [
+      '-api', '127.114.233.8:17080',
+      '-metrics', '127.114.233.8:15088',
+      '-L', 'socks5://:16780?udp=true',
+      '-F', `${arg.Server_config.connect_mode}://${arg.Server_config.method}:${arg.Server_config.token}@${arg.Server_config.ip}:${arg.Server_config.port}`
+    ];
+
+    const gost_exe = execFile(path.join(localesPath, 'bin\\SpeedNet.exe') , gost_args);
+    // logger.debug(`gost command: ${gost_command}`);
     // 监听子进程的标准输出数据
     gost_exe.stdout.on('data', (data) => {
       logger.debug(`[SpeedNet gost] ${data}`);
@@ -586,10 +586,11 @@ ipcMain.on('speed_code_config', (event, arg) => {
   }
 
   else if (arg.code_mod == "v2ray") {
-    Fox_writeFile(path.join(localesPath, 'resources\\bin\\SpeedNet_V2.json'), arg.v2config); // 写入v2ray配置
-    v2_cmd = `"${path.join(localesPath, 'resources\\bin\\SpeedNet_V2.exe')}"` +
-    " run -c " + `"${path.join(localesPath, 'resources\\bin\\SpeedNet_V2.json')}"`;
-    const v2ray_exe = exec(v2_cmd);
+    Fox_writeFile(path.join(myAppDataPath, 'SpeedNet_V2.json'), arg.v2config); // 写入v2ray配置
+    const v2_args = [
+      'run', '-c', path.join(myAppDataPath, 'SpeedNet_V2.json')
+    ];
+    const v2ray_exe = execFile(path.join(localesPath, 'bin\\SpeedNet_V2.exe'),v2_args);
 
     // 监听子进程的标准输出数据
     v2ray_exe.stdout.on('data', (data) => {
@@ -612,7 +613,12 @@ ipcMain.on('speed_code_config', (event, arg) => {
   // 启动加速模块
   // setTimeout(function(){
     logger.debug(`[SpeedProxy] mode ${arg.mode}`);
-    const SpeedProxy = exec(`"${path.join(localesPath, 'resources\\bin\\SpeedProxy.exe')}" ${arg.mode}`);
+
+    const SpeedProxy_args = [
+      arg.mode
+    ];
+
+    const SpeedProxy = execFile(path.join(localesPath, 'bin\\SpeedProxy.exe'),SpeedProxy_args);
     
     // 监听子进程的标准输出数据
     SpeedProxy.stdout.on('data', (data) => {
@@ -659,7 +665,7 @@ ipcMain.on('speed_code_config', (event, arg) => {
 
 // 测试启动模块
 ipcMain.on('speed_code_test', (event, arg) => {
-  const SpeedProxy_test = exec(`"${path.join(localesPath, 'resources\\bin\\SpeedProxy.exe')}" test_run`);
+  const SpeedProxy_test = exec(`"${path.join(localesPath, 'bin\\SpeedProxy.exe')}" test_run`);
   
   // 监听子进程的标准输出数据
   SpeedProxy_test.stdout.on('data', (data) => {
@@ -703,8 +709,16 @@ ipcMain.on('batchRemoveHostRecords', (event, arg) => {
 // 平台加速
 ipcMain.on('host_speed_start', (event, arg) => {
   logger.info(`[host] 平台加速:服务已启动`);
-  const host_speed_gost_exe = exec(`"${path.join(localesPath, 'resources\\bin\\SpeedNet.exe')}" ` +
-   "-api 127.114.233.8:18080 -metrics=127.114.233.8:16088 -L socks5://127.114.233.8:16789?udp=true -F " + arg.f);
+  
+  
+  const gost_args = [
+    '-api', '127.114.233.8:18080',
+    '-metrics', '127.114.233.8:16088',
+    '-L', 'socks5://127.114.233.8:16789?udp=true',
+    '-F', arg.f
+  ];
+
+  const host_speed_gost_exe = execFile(path.join(localesPath, 'bin\\SpeedNet.exe') , gost_args);
   
   // 监听子进程的标准输出数据
   host_speed_gost_exe.stdout.on('data', (data) => {
@@ -764,12 +778,6 @@ ipcMain.on('high_priority', (event, arg) => {
 });
 
 
-// traceRoute('jihujiasuqi.com')
-
-
-ipcMain.on('ipc_Update', (event, arg) => { 
-  checkUpdate();
-})
 
 // 更新的blob TODO:Why not fox_writefile?
 ipcMain.on('update_blob', (event, arg) => {
@@ -855,7 +863,7 @@ ipcMain.on('test_baidu', (event, arg) => {
 
 ipcMain.on('speed_code_config_exe', (event, arg) => {
   logger.debug(`[SpeedProxy] mode ${arg.mode}`);
-  const speed_code_config_exe = exec(`"${path.join(localesPath, 'resources\\bin\\SpeedProxy.exe')}" ${arg}`);
+  const speed_code_config_exe = exec(`"${path.join(localesPath, 'bin\\SpeedProxy.exe')}" ${arg}`);
   
   // 监听子进程的标准输出数据
   speed_code_config_exe.stdout.on('data', (data) => {
@@ -868,7 +876,7 @@ ipcMain.on('speed_code_config_exe', (event, arg) => {
 
 
 ipcMain.on('socks_connect_test', (event, arg) => {
-  const brook = exec(`"${path.join(localesPath, 'resources\\bin\\SpeedNet_brook.exe')}" testsocks5 -s 127.0.0.1:16780`);
+  const brook = exec(`"${path.join(localesPath, 'bin\\SpeedNet_brook.exe')}" testsocks5 -s 127.0.0.1:16780`);
 
  // 监听子进程的标准输出数据
   brook.stdout.on('data', (data) => {

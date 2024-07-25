@@ -3,6 +3,7 @@
 # SpeedFox 极狐游戏加速器
 [![](https://img.shields.io/badge/项目主页-SpeedFox-blue)](https://github.com/sunnny516/speedfox)
 [![](https://img.shields.io/badge/极狐官网-SpeedFox-black)](https://www.jihujiasuqi.com/)
+[![](https://img.shields.io/badge/极狐官网云平台-SpeedFox-green)](https://api.jihujiasuqi.com/partners/)
 [![构建状态](https://img.shields.io/github/actions/workflow/status/sunnny516/speedfox/build.yml.svg?branch=SpeedFoxV4)](https://github.com/sunnny516/speedfox/actions?query=workflow:ci)
 
 懒得写，晚点补作业
@@ -13,7 +14,7 @@ Todo
 
 ## 目录
 
-- [背景](#背景)
+
 - [安装](#安装)
 - [用法](#用法)
 - [相关项目（可选）](#相关项目)
@@ -22,9 +23,6 @@ Todo
     - [贡献人员](#贡献人员)
 - [开源协议](#开源协议)
 
-## 背景
-
-因为现在 Github 上的中国程序员越来越多，但是 Github 还是以英文为主导，对某些英语能力较弱的中国人不友好。所以，我根据 [@RichardLitt](https://github.com/RichardLitt) 主导的标准 README 项目 [RichardLitt/standard-readme](https://github.com/RichardLitt/standard-readme) 编写了中文版的标准 README 。
 
 ## 安装
 
