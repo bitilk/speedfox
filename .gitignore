@@ -1,5 +1,6 @@
 resources/bin/config/
 resources/bin/SpeedNet_V2.json
+build
 
 # Logs
 log
