@@ -198,7 +198,21 @@ function CreateMainWindow() {
     loadWindow.webContents.send('Framework', Framework);// 发送基座信息给渲染层
     // mainWindow.show()
   });
-
+  mainWindow.on('ready-to-show', () => {
+    let tray = new Tray(path.join(localesPath, 'bin/static/logo/'+app.getName()+'.ico'));
+    const contextMenu = Menu.buildFromTemplate(
+      [
+        { label: '显示', click: () => { mainWindow.show(); } },
+        { label: '退出', click: () => { ExitApp() } }
+    ]);
+    // tray.setToolTip(app_config.app.ToolTip);
+    tray.setContextMenu(contextMenu);
+    
+    // 单击托盘图标显示窗口
+    tray.on('click', () => {
+      mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+    });
+  });
   mainWindow.on('close', (event) => {
     if (!app.isQuiting) {
         // event.preventDefault();
@@ -390,27 +404,6 @@ ipcMain.on('window', (event, arg) => {
 
 ipcMain.on('speed_tips_Window', (event, arg) => {
   tips_Window(arg);
-});
-
-var isTrayOK = false;
-ipcMain.on('Tray', (event, arg) => {
-  if (isTrayOK) {
-    return;
-  }
-  isTrayOK = true;
-  tray = new Tray(path.join(localesPath, 'bin/static/logo/'+app.getName()+'.ico'));
-  const contextMenu = Menu.buildFromTemplate(
-    [
-      { label: '显示', click: () => { mainWindow.show(); } },
-      { label: '退出', click: () => { ExitApp() } }
-  ]);
-  // tray.setToolTip(app_config.app.ToolTip);
-  tray.setContextMenu(contextMenu);
-  
-  // 单击托盘图标显示窗口
-  tray.on('click', () => {
-    mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
-  });
 });
 
 const sockets = {};
