@@ -53,9 +53,11 @@ process.argv.forEach(function (item, index, array) {
   }
 });
 
-const {KillAllProcess} = require('./helper/process');
+const {KillAllProcess, OpenExternalProgram} = require('./helper/process');
 
-const appVersion = app.getVersion();
+const appVersion       = app.getVersion();
+const MAIN_UI_URL      = "https://api.jihujiasuqi.com/app_ui/pc/home.php";
+const LOADING_PAGE_URL = path.join(localesPath, "bin\\static\\load\\index.html");
 
 var mainWindow;
 var loadWindow;
@@ -65,12 +67,6 @@ var tipsWindow;
 const Framework = {
   version : appVersion
 }
-
-
-/* process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  // 可以在这里记录日志或进行其他处理
-}); */
 
 const instanceLock = app.requestSingleInstanceLock();
 if (!instanceLock) {
@@ -159,7 +155,7 @@ function CreateLoadingWindow() {
     }
   });
 
-  loadWindow.loadFile(path.join(localesPath, "bin\\static\\load\\index.html"));
+  loadWindow.loadFile(LOADING_PAGE_URL);
   loadWindow.on('closed', function () {
     loadWindow = null;
   });
@@ -169,6 +165,7 @@ function CreateLoadingWindow() {
     // loadWindow.setIgnoreMouseEvents(true) ?
    });
 }
+
 function CreateMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
@@ -188,7 +185,7 @@ function CreateMainWindow() {
       webSecurity:false
     }
   });
-  var ui_url = new URL("https://api.jihujiasuqi.com/app_ui/pc/home.php?&");
+  var ui_url = new URL(MAIN_UI_URL);
   ui_url.searchParams.append('product', app.getName());
   ui_url.searchParams.append('silent', silent);
   mainWindow.loadURL(ui_url.href);
@@ -339,35 +336,6 @@ function batchRemoveHostRecords(tag) {
     const updatedContent = filteredLines.join(os.EOL);
     writeHostsFile(updatedContent);
     logger.info(`[host] 批量记录已删除 tag: ${tag} updatedContent: ${updatedContent}`);
-}
-
-
-// TODO: should callback when failed
-function OpenExternalProgram(program) {
-  let command;
-
-  switch (os.platform()) {
-    case 'darwin': // macOS
-      command = `open -a "${program}"`;
-      break;
-    case 'win32': // Windows
-      command = `start "" "${program}"`;
-      break;
-    case 'linux': // Linux
-      command = `xdg-open "${program}"`;
-      break;
-    default: 
-      logger.error('[OpenExternalProgram] Unsupported platform:' + os.platform());
-      return;
-  }
-
-  exec(command, (error, stdout, stderr) => {
-    if (error || stderr) {
-      logger.error(`[OpenExternalProgram.exec]: ${error}`);
-      return;
-    }
-    logger.debug(`[OpenExternalProgram.exec]: ${stdout}`);
-  });
 }
 
 function ExitApp() {
