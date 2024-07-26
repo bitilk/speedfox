@@ -74,10 +74,12 @@ app.commandLine.appendSwitch('lang', 'en-US');
 
 var startUpTimeout;
 var myAppDataPath;
+
+KillAllProcess();
+batchRemoveHostRecords('# Speed Fox');
+
 app.on('ready', () => {
   myAppDataPath = app.getPath('appData');
-  KillAllProcess();
-  batchRemoveHostRecords('# Speed Fox');
   if (!silent) {
     CreateLoadingWindow();
   }
@@ -91,12 +93,6 @@ app.on('ready', () => {
 app.on('window-all-closed', function () {
   ExitApp();
   // if (process.platform !== 'darwin'){ }
-});
-
-app.on('activate', function () {
-  if (mainWindow === null) {
-    CreateMainWindow();
-  }
 });
 
 function Fox_writeFile(filePath, textToWrite) {
