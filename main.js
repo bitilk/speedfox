@@ -8,26 +8,7 @@ const os = require('os');
 const request = require('request');
 const net = require('net');
 
-/*** LOGGING ***/
-const winston = require('winston');
-require('winston-daily-rotate-file');
-
-const fileRotateTransport = new winston.transports.DailyRotateFile({
-  filename: 'log/%DATE%.log',
-  datePattern: 'YYYY-MM-DD',
-  maxFiles: '7d',
-  maxSize: '20m'
-});
-
-const logger = winston.createLogger({
-  level: 'debug',
-  format: winston.format.cli(),
-  transports: [
-    new winston.transports.Console(),
-    fileRotateTransport
-  ]
-});
-/*** LOGGING ***/
+const logger = require('./helper/logger');
 
 var localesPath = process.cwd();
 var silent = false;
@@ -54,6 +35,7 @@ process.argv.forEach(function (item, index, array) {
 });
 
 const {KillAllProcess, OpenExternalProgram} = require('./helper/process');
+const {batchAddHostRecords, batchRemoveHostRecords} = require('./helper/hosts');
 
 const appVersion       = app.getVersion();
 const MAIN_UI_URL      = "https://api.jihujiasuqi.com/app_ui/pc/home.php";
@@ -305,52 +287,6 @@ function socks_test(tag,test_socks) {
     }
   });
 }
-////////////////////////////  HOST 修改模块  /////////////////////////////////
-// 定义 hosts 文件路径
-const hostsFilePath = path.resolve('C:\\Windows\\System32\\drivers\\etc\\hosts')
-
-// 读取 hosts 文件内容
-function readHostsFile() {
-    return fs.readFileSync(hostsFilePath, 'utf8');
-}
-
-// 写入 hosts 文件内容
-function writeHostsFile(content) {
-    fs.writeFileSync(hostsFilePath, content, 'utf8');
-}
-
-// 批量添加记录
-function batchAddHostRecords(records, tag) {
-    let content = readHostsFile();
-
-    records.forEach(record => {
-        const newRecord = `${record.ip} ${record.hostname} ${tag}`;
-        
-        if (!content.includes(newRecord)) {
-            content += os.EOL + newRecord;
-        }
-    });
-
-    writeHostsFile(content);
-    logger.info('[host] Batch added');
-}
-
-// 批量删除带有特定标签的记录
-function batchRemoveHostRecords(tag) {
-    const content = readHostsFile();
-    const lines = content.split(os.EOL);
-    
-    const filteredLines = lines.filter(line => !line.includes(tag));
-    
-    if (lines.length === filteredLines.length) {
-      logger.info(`[host] Record not found with tag: ${tag}`);
-        return;
-    }
-    
-    const updatedContent = filteredLines.join(os.EOL);
-    writeHostsFile(updatedContent);
-    logger.info(`[host] 批量记录已删除 tag: ${tag} updatedContent: ${updatedContent}`);
-}
 
 function ExitApp() {
   logger.info('[ExitApp]');
@@ -406,58 +342,40 @@ ipcMain.on('speed_tips_Window', (event, arg) => {
   tips_Window(arg);
 });
 
-const sockets = {};
-function testLatency(host, port, timeout, callback) {
-  const startTime = Date.now();
-  const socket = net.createConnection({ host, port });
-  sockets[host] = socket; // 使用编号作为键，存储连接对象
-
-  sockets[host].on('connect', () => {
-      const latency = Date.now() - startTime;
-      socket.destroy(); // 关闭连接
-      callback(null, latency, host, port);
-  });
-
-  sockets[host].on('error', (err) => {
-      callback(err, "unknown", host, port);
-  });
-}
-
-function Ping(host , timeout , C ,pingid){
+function Ping(host, timeout, pingid) {
 
   port = host.split(":")[1];
   host = host.split(":")[0];
-
-
-  // console.log(`TEST${host}:${port}`);
-
-  testLatency(host, port, timeout , (err, latency) => {
-    if (err) {
-        console.error('Error:', err);
-    } else {
-        // console.log(`350  Latency to ${host}:${port} is ${latency}ms`);
-        const ping_replydata = {
-          ms:latency,
-          pingid:pingid,
-          res:{
-            time:latency,
-            host:host
-          }
-        }
-        mainWindow.webContents.send('ping-reply', ping_replydata);
+  const startTime = Date.now();
+  var socket = net.createConnection({ host, port });
+  var ping_replydata = {
+    ms: 0,
+    pingid: pingid,
+    res: {
+      time: 0,
+      host: host
     }
+  }
+  socket.on('connect', () => {
+    const latency = Date.now() - startTime;
+    socket.destroy();
+    ping_replydata.ms = ping_replydata.res.time = latency;
+    mainWindow.webContents.send('ping-reply', ping_replydata);
   });
 
+  socket.on('error', (err) => {
+    console.error(`[Ping] ${err}`);
+    socket.destroy();
+  });
 }
 
-//TODO:FIX IT!
-ipcMain.on('ping', (event, arg) => {
+//TODO: FIX IT!
+ipcMain.on('ping', async (event, arg) => {
   // console.log(arg); // 打印消息
   host = arg.host;
   timeout = arg.timeout;
-  C = arg.C;
   pingid = arg.pingid;
-  Ping(host, timeout, C, pingid);
+  Ping(host, timeout, pingid);
 });
 
 
@@ -670,8 +588,7 @@ ipcMain.on('batchRemoveHostRecords', (event, arg) => {
 // 平台加速
 ipcMain.on('host_speed_start', (event, arg) => {
   logger.info(`[host] 平台加速:服务已启动`);
-  
-  
+
   const gost_args = [
     '-api', '127.114.233.8:18080',
     '-metrics', '127.114.233.8:16088',
@@ -680,12 +597,11 @@ ipcMain.on('host_speed_start', (event, arg) => {
   ];
 
   const host_speed_gost_exe = execFile(path.join(localesPath, 'bin\\SpeedNet.exe') , gost_args);
-  
+
   // 监听子进程的标准输出数据
   host_speed_gost_exe.stdout.on('data', (data) => {
     logger.debug(`[host_speed_start] host speed: ${data}`);
   });
-  
 })
 
 ipcMain.on('socks_test', (event, arg) => {
