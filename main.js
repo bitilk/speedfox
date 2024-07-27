@@ -11,7 +11,9 @@ const net = require('net');
 const logger = require('./helper/logger');
 
 var localesPath = process.cwd();
-var silent = false;
+const silent = process.argv.includes('-silent')
+  ? true
+  : false;
 
 /***  错误不弹出  ***/
 process.on('uncaughtException', (error) => {
@@ -22,28 +24,23 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 /***  错误不弹出  ***/
 
-
 process.argv.forEach(function (item, index, array) {
   if (item.includes("-workdir")) {
     argv = item.split("=");
     logger.debug("workdir:", argv[1]);
     localesPath = argv[1];
   }
-  if (item.includes("-silent")) {
-    silent = true;
-  }
 });
 
 const {KillAllProcess, OpenExternalProgram} = require('./helper/process');
 const {batchAddHostRecords, batchRemoveHostRecords} = require('./helper/hosts');
 
+const {MAIN_WINDOW_CONFIG, LOAD_WINDOW_CONFIG, TIPS_WINDOW_CONFIG} = require('./config/window');
+let loadWindow, mainWindow, tipsWindow = null;
+
 const appVersion       = app.getVersion();
 const MAIN_UI_URL      = "https://api.jihujiasuqi.com/app_ui/pc/home.php";
 const LOADING_PAGE_URL = path.join(localesPath, "bin\\static\\load\\index.html");
-
-var mainWindow;
-var loadWindow;
-var tipsWindow;
 
 // 请勿随意更新版基座本号，否则渲染层网页无法自动识别基座本号，导致新功能无法使用
 const Framework = {
@@ -105,34 +102,7 @@ function Fox_writeFile(filePath, textToWrite) {
 }
 
 function CreateLoadingWindow() {
-  loadWindow = new BrowserWindow({
-    width: 600,
-    height: 600,
-    transparent: true,// 透明窗口
-    frame: false, // 隐藏窗口的标题栏
-    show: false, // 隐藏窗口
-    // 窗口可移动
-    movable: true,
-    // 窗口可调整大小
-    resizable: false,
-    // 窗口不能最小化
-    minimizable: false,
-    // 窗口不能最大化
-    maximizable: false,
-    // 窗口不能进入全屏状态
-    fullscreenable: false,
-    // 窗口不能?关闭
-    closable: true,
-
-    autoHideMenuBar: true, // 自动隐藏菜单栏
-    webPreferences: {
-      nodeIntegration: true, // 允许在渲染进程中使用 Node.js
-      contextIsolation: false, // 取消上下文隔离
-      enableRemoteModule: true, // 允许使用 remote 模块（如果需要）
-      webSecurity: false
-    }
-  });
-
+  loadWindow = new BrowserWindow(LOAD_WINDOW_CONFIG);
   loadWindow.loadFile(LOADING_PAGE_URL);
   loadWindow.on('closed', function () {
     loadWindow = null;
@@ -145,24 +115,7 @@ function CreateLoadingWindow() {
 }
 
 function CreateMainWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    frame: false, // 隐藏窗口的标题栏
-    transparent: true,// 透明窗口
-    show:false, // 隐藏窗口
-    // 窗口可调整大小
-    resizable: false,
-    autoHideMenuBar: true, // 自动隐藏菜单栏
-    fullscreenable: false, // 禁止f11全屏
-    webPreferences: {
-      nodeIntegration: true, // 允许在渲染进程中使用 Node.js
-      contextIsolation: false, // 取消上下文隔离
-      enableRemoteModule: true, // 允许使用 remote 模块（如果需要）
-      allowRunningInsecureContent: true, // 允许不安全的内容运行
-      webSecurity:false
-    }
-  });
+  mainWindow = new BrowserWindow(MAIN_WINDOW_CONFIG);
   var ui_url = new URL(MAIN_UI_URL);
   ui_url.searchParams.append('product', app.getName());
   ui_url.searchParams.append('silent', silent);
@@ -203,37 +156,7 @@ function CreateMainWindow() {
 }
 //TODO:
 function tips_Window(data) {
-  tipsWindow = new BrowserWindow({
-    width: 340,
-    height: 95,
-    x: 0,
-    y: 150,
-    transparent: true,// 透明窗口
-    frame: false, // 隐藏窗口的标题栏
-    show:false, // 隐藏窗口
-    // 窗口可移动
-    movable: true,
-    // 窗口可调整大小
-    resizable: false,
-    // 窗口不能最小化
-    minimizable: false,
-    // 窗口不能最大化
-    maximizable: false,
-    // 窗口不能进入全屏状态
-    fullscreenable: false,
-    // 窗口不能关闭
-    closable: true,
-
-    alwaysOnTop: true,// 最顶层
-
-    autoHideMenuBar: true, // 自动隐藏菜单栏
-    webPreferences: {
-      nodeIntegration: true, // 允许在渲染进程中使用 Node.js
-      contextIsolation: false, // 取消上下文隔离
-      enableRemoteModule: true, // 允许使用 remote 模块（如果需要）
-      webSecurity:false
-    }
-  });
+  tipsWindow = new BrowserWindow(TIPS_WINDOW_CONFIG);
   var tips_url = new URL(data.url);
   tips_url.searchParams.append('product', app.getName());
   tipsWindow.loadURL(ui_url.href);
