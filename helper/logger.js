@@ -15,7 +15,10 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.Console(),
-    new transports.File({ filename: path.join('log', logFilename) })
+    new transports.File({
+      filename: path.join('log', logFilename),
+      maxFiles: 5
+    })
   ]
 });
 
