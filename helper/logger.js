@@ -6,8 +6,8 @@ const path = require('path');
 require('winston-daily-rotate-file');
 
 const StartTimestamp = new Date().toISOString().replace(/:/g, '-');
-const logFilename    = `application-${StartTimestamp}.log`;
-const LOG_FILE_PATH  = path.join('log', logFilename);
+const LOG_FILE_NAME    = `application-${StartTimestamp}.log`;
+const LOG_FILE_PATH  = path.join('log', LOG_FILE_NAME);
 
 const logger = winston.createLogger({
   level: 'debug',
@@ -24,10 +24,5 @@ const logger = winston.createLogger({
   ]
 });
 
-function getLog() {
-  const LOG_CONTENT = fs.readFileSync(LOG_FILE_PATH, 'utf8');
-  return LOG_CONTENT;
-}
-
 module.exports.logger = logger;
-module.exports.getLog = getLog;
+module.exports.LOG_FILE_PATH = LOG_FILE_PATH;

@@ -8,7 +8,7 @@ const os = require('os');
 const request = require('request');
 const net = require('net');
 
-const {logger, getLog} = require('./helper/logger');
+const {logger, LOG_FILE_PATH} = require('./helper/logger');
 
 var localesPath = process.cwd();
 const silent = process.argv.includes('-silent')
@@ -310,7 +310,7 @@ ipcMain.on('speed_code_config', (event, arg) => {
   }
   else if (arg.mode == "log") {
     //TODO:
-    const LOG_CONTENT = getLog();
+    let LOG_CONTENT = fs.readFileSync(LOG_FILE_PATH,'utf8')
     mainWindow.webContents.send('speed_code', { "start":"log", "log": LOG_CONTENT });
     return;
   }
