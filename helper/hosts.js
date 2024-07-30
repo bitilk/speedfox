@@ -3,7 +3,7 @@ const path = require('path');
 const os = require('os');
 const hostsFilePath = path.resolve('C:\\Windows\\System32\\drivers\\etc\\hosts');
 
-var logger = require('../helper/logger');
+const {logger} = require('../helper/logger');
 
 // 读取 hosts 文件内容
 function readHostsFile() {

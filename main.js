@@ -8,7 +8,7 @@ const os = require('os');
 const request = require('request');
 const net = require('net');
 
-const logger = require('./helper/logger');
+const {logger, getLog} = require('./helper/logger');
 
 var localesPath = process.cwd();
 const silent = process.argv.includes('-silent')
@@ -72,11 +72,12 @@ app.commandLine.appendSwitch('lang', 'en-US');
 var startUpTimeout;
 var myAppDataPath;
 
+logger.info("[app] Starting...");
+
 KillAllProcess();
 batchRemoveHostRecords('# Speed Fox');
 
 app.whenReady().then(() => {
-  logger.info("[app] Starting...");
   myAppDataPath = app.getPath('appData');
   if (!silent) {
     CreateLoadingWindow();
@@ -309,7 +310,8 @@ ipcMain.on('speed_code_config', (event, arg) => {
   }
   else if (arg.mode == "log") {
     //TODO:
-    mainWindow.webContents.send('speed_code', {"start":"log","log":null});
+    const LOG_CONTENT = getLog();
+    mainWindow.webContents.send('speed_code', { "start":"log", "log": LOG_CONTENT });
     return;
   }
 
