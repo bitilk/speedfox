@@ -1,19 +1,21 @@
 const winston = require('winston');
+const { createLogger, format, transports } = require('winston');
+const path = require('path');
+
 require('winston-daily-rotate-file');
 
-const fileRotateTransport = new winston.transports.DailyRotateFile({
-  filename: 'log/%DATE%.log',
-  datePattern: 'YYYY-MM-DD',
-  maxFiles: '3d',
-  maxSize: '128m'
-});
+const StartTimestamp = new Date().toISOString().replace(/:/g, '-');
+const logFilename = `application-${StartTimestamp}.log`;
 
 const logger = winston.createLogger({
   level: 'debug',
-  format: winston.format.cli(),
+  format: format.combine(
+    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
+  ),
   transports: [
     new winston.transports.Console(),
-    fileRotateTransport
+    new transports.File({ filename: path.join('log', logFilename) })
   ]
 });
 

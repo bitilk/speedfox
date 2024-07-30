@@ -75,7 +75,8 @@ var myAppDataPath;
 KillAllProcess();
 batchRemoveHostRecords('# Speed Fox');
 
-app.on('ready', () => {
+app.whenReady().then(() => {
+  logger.info("[app] Starting...");
   myAppDataPath = app.getPath('appData');
   if (!silent) {
     CreateLoadingWindow();
@@ -107,8 +108,9 @@ function CreateLoadingWindow() {
   loadWindow.on('closed', function () {
     loadWindow = null;
   });
-  loadWindow.on('ready-to-show',() => {
+  loadWindow.once('ready-to-show',() => {
     loadWindow.setSkipTaskbar(true);
+    loadWindow.webContents.send('Framework', Framework);
     loadWindow.show();
     // loadWindow.setIgnoreMouseEvents(true) ?
    });
@@ -124,12 +126,7 @@ function CreateMainWindow() {
     // logStream.end();
     mainWindow = null;
   });
-
-  loadWindow.on('ready-to-show',()=>{
-    loadWindow.webContents.send('Framework', Framework);// 发送基座信息给渲染层
-    // mainWindow.show()
-  });
-  mainWindow.on('ready-to-show', () => {
+  mainWindow.once('ready-to-show', () => {
     let tray = new Tray(path.join(localesPath, 'bin/static/logo/'+app.getName()+'.ico'));
     const contextMenu = Menu.buildFromTemplate(
       [
@@ -164,10 +161,10 @@ function tips_Window(data) {
   tipsWindow.on('closed', function () {
     tipsWindow = null;
   });
-  tipsWindow.on('ready-to-show',()=>{
-    tipsWindow.setSkipTaskbar(true)
-    tipsWindow.show()
-    tipsWindow.setIgnoreMouseEvents(true)
+  tipsWindow.once('ready-to-show',()=>{
+    tipsWindow.setSkipTaskbar(true);
+    tipsWindow.show();
+    tipsWindow.setIgnoreMouseEvents(true);
    });
 
 
