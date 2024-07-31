@@ -15,6 +15,8 @@ const silent = process.argv.includes('-silent')
   ? true
   : false;
 
+
+
 /***  错误不弹出  ***/
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
@@ -35,12 +37,90 @@ process.argv.forEach(function (item, index, array) {
 const {KillAllProcess, OpenExternalProgram} = require('./helper/process');
 const {batchAddHostRecords, batchRemoveHostRecords} = require('./helper/hosts');
 
-const {MAIN_WINDOW_CONFIG, LOAD_WINDOW_CONFIG, TIPS_WINDOW_CONFIG} = require('./config/window');
 let loadWindow, mainWindow, tipsWindow = null;
 
 const appVersion       = app.getVersion();
-const MAIN_UI_URL      = "https://api.jihujiasuqi.com/app_ui/pc/home.php";
+const MAIN_UI_URL      = "https://api.jihujiasuqi.com/app_ui/pc/home.php"; // 服务器web位置
 const LOADING_PAGE_URL = path.join(localesPath, "bin\\static\\load\\index.html");
+
+const MAIN_WINDOW_CONFIG = {
+  width: 1000,
+  height: 700,
+  frame: false, // 隐藏窗口的标题栏
+  transparent: true,// 透明窗口
+  show:false, // 隐藏窗口
+  // 窗口可调整大小
+  resizable: false,
+  autoHideMenuBar: true, // 自动隐藏菜单栏
+  fullscreenable: false, // 禁止f11全屏
+  webPreferences: {
+    nodeIntegration: true, // 允许在渲染进程中使用 Node.js
+    contextIsolation: false, // 取消上下文隔离
+    enableRemoteModule: true, // 允许使用 remote 模块（如果需要）
+    allowRunningInsecureContent: true, // 允许不安全的内容运行
+    webSecurity:false
+  }
+};
+const LOAD_WINDOW_CONFIG = {
+  width: 600,
+  height: 600,
+  transparent: true,// 透明窗口
+  frame: false, // 隐藏窗口的标题栏
+  show: false, // 隐藏窗口
+  // 窗口可移动
+  movable: true,
+  // 窗口可调整大小
+  resizable: false,
+  // 窗口不能最小化
+  minimizable: false,
+  // 窗口不能最大化
+  maximizable: false,
+  // 窗口不能进入全屏状态
+  fullscreenable: false,
+  // 窗口不能?关闭
+  closable: true,
+
+  autoHideMenuBar: true, // 自动隐藏菜单栏
+  webPreferences: {
+    nodeIntegration: true, // 允许在渲染进程中使用 Node.js
+    contextIsolation: false, // 取消上下文隔离
+    enableRemoteModule: true, // 允许使用 remote 模块（如果需要）
+    webSecurity: false
+  }
+};
+
+const TIPS_WINDOW_CONFIG = {
+  width: 340,
+  height: 95,
+  x: 0,
+  y: 150,
+  transparent: true,// 透明窗口
+  frame: false, // 隐藏窗口的标题栏
+  show:false, // 隐藏窗口
+  // 窗口可移动
+  movable: true,
+  // 窗口可调整大小
+  resizable: false,
+  // 窗口不能最小化
+  minimizable: false,
+  // 窗口不能最大化
+  maximizable: false,
+  // 窗口不能进入全屏状态
+  fullscreenable: false,
+  // 窗口不能关闭
+  closable: true,
+
+  alwaysOnTop: true,// 最顶层
+
+  autoHideMenuBar: true, // 自动隐藏菜单栏
+  webPreferences: {
+    nodeIntegration: true, // 允许在渲染进程中使用 Node.js
+    contextIsolation: false, // 取消上下文隔离
+    enableRemoteModule: true, // 允许使用 remote 模块（如果需要）
+    webSecurity:false
+  }
+};
+
 
 // 请勿随意更新版基座本号，否则渲染层网页无法自动识别基座本号，导致新功能无法使用
 const Framework = {
@@ -222,6 +302,7 @@ ipcMain.on('window', (event, arg) => {
   if (arg[0] == "ui") {
     if (arg[1] == "show") {
       mainWindow.show();
+      mainWindow.setMenuBarVisibility(false);
       mainWindow.webContents.send('Framework', Framework);
     }
     if (arg[1] == "hide") {
@@ -310,8 +391,7 @@ ipcMain.on('speed_code_config', (event, arg) => {
   }
   else if (arg.mode == "log") {
     //TODO:
-    let LOG_CONTENT = fs.readFileSync(LOG_FILE_PATH,'utf8')
-    mainWindow.webContents.send('speed_code', { "start":"log", "log": LOG_CONTENT });
+    mainWindow.webContents.send('speed_code', {"start":"log","log":null});
     return;
   }
 
@@ -328,7 +408,7 @@ ipcMain.on('speed_code_config', (event, arg) => {
     return;
   }
 
-  logger.info(`=== Now Starting nf2 === `);
+  // logger.info(`=== Now Starting nf2 === `);
   // 处理nf2配置
   nf2_config = Buffer.from(arg.Game_config.nf2_config, 'base64').toString('utf-8');
   const dataArray = nf2_config.split("\n");
@@ -462,7 +542,7 @@ ipcMain.on('speed_code_config', (event, arg) => {
 
 // 测试启动模块
 ipcMain.on('speed_code_test', (event, arg) => {
-  const SpeedProxy_test = exec(`"${path.join(localesPath, 'bin\\SpeedProxy.exe')}" test_run`);
+  const SpeedProxy_test = exec(`"${path.join(localesPath, 'bin\\SpeedProxy.exe')}" nf2_install`);
   
   // 监听子进程的标准输出数据
   SpeedProxy_test.stdout.on('data', (data) => {
@@ -654,6 +734,7 @@ ipcMain.on('test_baidu', (event, arg) => {
   // 让父进程不再等待子进程的退出
   child.unref();
 });
+
 
 
 ipcMain.on('speed_code_config_exe', (event, arg) => {
