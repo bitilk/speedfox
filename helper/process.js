@@ -1,5 +1,5 @@
 const { spawn,exec } = require('child_process');
-
+const {logger} = require('../helper/logger');
 function KillTask(processName) {
   // const processName = 'notepad.exe';
 
@@ -27,4 +27,32 @@ function KillAllProcess() {
   KillTask("SpeedNet_brook.exe");
 }
 
-module.exports = {KillAllProcess};
+// TODO: should callback when failed
+function OpenExternalProgram(program) {
+  let command;
+
+  switch (os.platform()) {
+    case 'darwin': // macOS
+      command = `open -a "${program}"`;
+      break;
+    case 'win32': // Windows
+      command = `start "" "${program}"`;
+      break;
+    case 'linux': // Linux
+      command = `xdg-open "${program}"`;
+      break;
+    default: 
+      logger.error('[OpenExternalProgram] Unsupported platform:' + os.platform());
+      return;
+  }
+
+  exec(command, (error, stdout, stderr) => {
+    if (error || stderr) {
+      logger.error(`[OpenExternalProgram.exec]: ${error}`);
+      return;
+    }
+    logger.debug(`[OpenExternalProgram.exec]: ${stdout}`);
+  });
+}
+
+module.exports = {KillAllProcess, OpenExternalProgram};

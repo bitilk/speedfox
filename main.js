@@ -8,29 +8,12 @@ const os = require('os');
 const request = require('request');
 const net = require('net');
 
-/*** LOGGING ***/
-const winston = require('winston');
-require('winston-daily-rotate-file');
-
-const fileRotateTransport = new winston.transports.DailyRotateFile({
-  filename: 'log/%DATE%.log',
-  datePattern: 'YYYY-MM-DD',
-  maxFiles: '7d',
-  maxSize: '20m'
-});
-
-const logger = winston.createLogger({
-  level: 'debug',
-  format: winston.format.cli(),
-  transports: [
-    new winston.transports.Console(),
-    fileRotateTransport
-  ]
-});
-/*** LOGGING ***/
+const {logger, LOG_FILE_PATH} = require('./helper/logger');
 
 var localesPath = process.cwd();
-var silent = false;
+const silent = process.argv.includes('-silent')
+  ? true
+  : false;
 
 /***  错误不弹出  ***/
 process.on('uncaughtException', (error) => {
@@ -41,36 +24,28 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 /***  错误不弹出  ***/
 
-
 process.argv.forEach(function (item, index, array) {
   if (item.includes("-workdir")) {
     argv = item.split("=");
     logger.debug("workdir:", argv[1]);
     localesPath = argv[1];
   }
-  if (item.includes("-silent")) {
-    silent = true;
-  }
 });
 
-const {KillAllProcess} = require('./helper/process');
+const {KillAllProcess, OpenExternalProgram} = require('./helper/process');
+const {batchAddHostRecords, batchRemoveHostRecords} = require('./helper/hosts');
 
-const appVersion = app.getVersion();
+const {MAIN_WINDOW_CONFIG, LOAD_WINDOW_CONFIG, TIPS_WINDOW_CONFIG} = require('./config/window');
+let loadWindow, mainWindow, tipsWindow = null;
 
-var mainWindow;
-var loadWindow;
-var tipsWindow;
+const appVersion       = app.getVersion();
+const MAIN_UI_URL      = "https://api.jihujiasuqi.com/app_ui/pc/home.php";
+const LOADING_PAGE_URL = path.join(localesPath, "bin\\static\\load\\index.html");
 
 // 请勿随意更新版基座本号，否则渲染层网页无法自动识别基座本号，导致新功能无法使用
 const Framework = {
   version : appVersion
 }
-
-
-/* process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  // 可以在这里记录日志或进行其他处理
-}); */
 
 const instanceLock = app.requestSingleInstanceLock();
 if (!instanceLock) {
@@ -96,10 +71,14 @@ app.commandLine.appendSwitch('lang', 'en-US');
 
 var startUpTimeout;
 var myAppDataPath;
-app.on('ready', () => {
+
+logger.info("[app] Starting...");
+
+KillAllProcess();
+batchRemoveHostRecords('# Speed Fox');
+
+app.whenReady().then(() => {
   myAppDataPath = app.getPath('appData');
-  KillAllProcess();
-  batchRemoveHostRecords('# Speed Fox');
   if (!silent) {
     CreateLoadingWindow();
   }
@@ -115,12 +94,6 @@ app.on('window-all-closed', function () {
   // if (process.platform !== 'darwin'){ }
 });
 
-app.on('activate', function () {
-  if (mainWindow === null) {
-    CreateMainWindow();
-  }
-});
-
 function Fox_writeFile(filePath, textToWrite) {
   fs.writeFile(filePath, textToWrite, (err) => {
     if (err) {
@@ -131,64 +104,22 @@ function Fox_writeFile(filePath, textToWrite) {
 }
 
 function CreateLoadingWindow() {
-  loadWindow = new BrowserWindow({
-    width: 600,
-    height: 600,
-    transparent: true,// 透明窗口
-    frame: false, // 隐藏窗口的标题栏
-    show: false, // 隐藏窗口
-    // 窗口可移动
-    movable: true,
-    // 窗口可调整大小
-    resizable: false,
-    // 窗口不能最小化
-    minimizable: false,
-    // 窗口不能最大化
-    maximizable: false,
-    // 窗口不能进入全屏状态
-    fullscreenable: false,
-    // 窗口不能?关闭
-    closable: true,
-
-    autoHideMenuBar: true, // 自动隐藏菜单栏
-    webPreferences: {
-      nodeIntegration: true, // 允许在渲染进程中使用 Node.js
-      contextIsolation: false, // 取消上下文隔离
-      enableRemoteModule: true, // 允许使用 remote 模块（如果需要）
-      webSecurity: false
-    }
-  });
-
-  loadWindow.loadFile(path.join(localesPath, "bin\\static\\load\\index.html"));
+  loadWindow = new BrowserWindow(LOAD_WINDOW_CONFIG);
+  loadWindow.loadFile(LOADING_PAGE_URL);
   loadWindow.on('closed', function () {
     loadWindow = null;
   });
-  loadWindow.on('ready-to-show',() => {
+  loadWindow.once('ready-to-show',() => {
     loadWindow.setSkipTaskbar(true);
+    loadWindow.webContents.send('Framework', Framework);
     loadWindow.show();
     // loadWindow.setIgnoreMouseEvents(true) ?
    });
 }
+
 function CreateMainWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    frame: false, // 隐藏窗口的标题栏
-    transparent: true,// 透明窗口
-    show:false, // 隐藏窗口
-    // 窗口可调整大小
-    resizable: false,
-    autoHideMenuBar: true, // 自动隐藏菜单栏
-    fullscreenable: false, // 禁止f11全屏
-    webPreferences: {
-      nodeIntegration: true, // 允许在渲染进程中使用 Node.js
-      contextIsolation: false, // 取消上下文隔离
-      enableRemoteModule: true, // 允许使用 remote 模块（如果需要）
-      allowRunningInsecureContent: true, // 允许不安全的内容运行
-      webSecurity:false
-    }
-  });
-  var ui_url = new URL("https://api.jihujiasuqi.com/app_ui/pc/home.php?&");
+  mainWindow = new BrowserWindow(MAIN_WINDOW_CONFIG);
+  var ui_url = new URL(MAIN_UI_URL);
   ui_url.searchParams.append('product', app.getName());
   ui_url.searchParams.append('silent', silent);
   mainWindow.loadURL(ui_url.href);
@@ -196,12 +127,21 @@ function CreateMainWindow() {
     // logStream.end();
     mainWindow = null;
   });
-
-  loadWindow.on('ready-to-show',()=>{
-    loadWindow.webContents.send('Framework', Framework);// 发送基座信息给渲染层
-    // mainWindow.show()
+  mainWindow.once('ready-to-show', () => {
+    let tray = new Tray(path.join(localesPath, 'bin/static/logo/'+app.getName()+'.ico'));
+    const contextMenu = Menu.buildFromTemplate(
+      [
+        { label: '显示', click: () => { mainWindow.show(); } },
+        { label: '退出', click: () => { ExitApp() } }
+    ]);
+    // tray.setToolTip(app_config.app.ToolTip);
+    tray.setContextMenu(contextMenu);
+    
+    // 单击托盘图标显示窗口
+    tray.on('click', () => {
+      mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+    });
   });
-
   mainWindow.on('close', (event) => {
     if (!app.isQuiting) {
         // event.preventDefault();
@@ -214,37 +154,7 @@ function CreateMainWindow() {
 }
 //TODO:
 function tips_Window(data) {
-  tipsWindow = new BrowserWindow({
-    width: 340,
-    height: 95,
-    x: 0,
-    y: 150,
-    transparent: true,// 透明窗口
-    frame: false, // 隐藏窗口的标题栏
-    show:false, // 隐藏窗口
-    // 窗口可移动
-    movable: true,
-    // 窗口可调整大小
-    resizable: false,
-    // 窗口不能最小化
-    minimizable: false,
-    // 窗口不能最大化
-    maximizable: false,
-    // 窗口不能进入全屏状态
-    fullscreenable: false,
-    // 窗口不能关闭
-    closable: true,
-
-    alwaysOnTop: true,// 最顶层
-
-    autoHideMenuBar: true, // 自动隐藏菜单栏
-    webPreferences: {
-      nodeIntegration: true, // 允许在渲染进程中使用 Node.js
-      contextIsolation: false, // 取消上下文隔离
-      enableRemoteModule: true, // 允许使用 remote 模块（如果需要）
-      webSecurity:false
-    }
-  });
+  tipsWindow = new BrowserWindow(TIPS_WINDOW_CONFIG);
   var tips_url = new URL(data.url);
   tips_url.searchParams.append('product', app.getName());
   tipsWindow.loadURL(ui_url.href);
@@ -252,10 +162,10 @@ function tips_Window(data) {
   tipsWindow.on('closed', function () {
     tipsWindow = null;
   });
-  tipsWindow.on('ready-to-show',()=>{
-    tipsWindow.setSkipTaskbar(true)
-    tipsWindow.show()
-    tipsWindow.setIgnoreMouseEvents(true)
+  tipsWindow.once('ready-to-show',()=>{
+    tipsWindow.setSkipTaskbar(true);
+    tipsWindow.show();
+    tipsWindow.setIgnoreMouseEvents(true);
    });
 
 
@@ -292,81 +202,6 @@ function socks_test(tag,test_socks) {
       );
       mainWindow.webContents.send('speed_code', {"start":"SOCKS ERR","msg":"socks检测出错,主机空回复","tag":tag});
     }
-  });
-}
-////////////////////////////  HOST 修改模块  /////////////////////////////////
-// 定义 hosts 文件路径
-const hostsFilePath = path.resolve('C:\\Windows\\System32\\drivers\\etc\\hosts')
-
-// 读取 hosts 文件内容
-function readHostsFile() {
-    return fs.readFileSync(hostsFilePath, 'utf8');
-}
-
-// 写入 hosts 文件内容
-function writeHostsFile(content) {
-    fs.writeFileSync(hostsFilePath, content, 'utf8');
-}
-
-// 批量添加记录
-function batchAddHostRecords(records, tag) {
-    let content = readHostsFile();
-
-    records.forEach(record => {
-        const newRecord = `${record.ip} ${record.hostname} ${tag}`;
-        
-        if (!content.includes(newRecord)) {
-            content += os.EOL + newRecord;
-        }
-    });
-
-    writeHostsFile(content);
-    logger.info('[host] Batch added');
-}
-
-// 批量删除带有特定标签的记录
-function batchRemoveHostRecords(tag) {
-    const content = readHostsFile();
-    const lines = content.split(os.EOL);
-    
-    const filteredLines = lines.filter(line => !line.includes(tag));
-    
-    if (lines.length === filteredLines.length) {
-      logger.info(`[host] Record not found with tag: ${tag}`);
-        return;
-    }
-    
-    const updatedContent = filteredLines.join(os.EOL);
-    writeHostsFile(updatedContent);
-    logger.info(`[host] 批量记录已删除 tag: ${tag} updatedContent: ${updatedContent}`);
-}
-
-
-// TODO: should callback when failed
-function OpenExternalProgram(program) {
-  let command;
-
-  switch (os.platform()) {
-    case 'darwin': // macOS
-      command = `open -a "${program}"`;
-      break;
-    case 'win32': // Windows
-      command = `start "" "${program}"`;
-      break;
-    case 'linux': // Linux
-      command = `xdg-open "${program}"`;
-      break;
-    default: 
-      logger.error('[OpenExternalProgram] Unsupported platform:' + os.platform());
-      return;
-  }
-
-  exec(command, (error, stdout, stderr) => {
-    if (error || stderr) {
-      logger.error(`[OpenExternalProgram.exec]: ${error}`);
-      return;
-    }
-    logger.debug(`[OpenExternalProgram.exec]: ${stdout}`);
   });
 }
 
@@ -424,79 +259,40 @@ ipcMain.on('speed_tips_Window', (event, arg) => {
   tips_Window(arg);
 });
 
-var isTrayOK = false;
-ipcMain.on('Tray', (event, arg) => {
-  if (isTrayOK) {
-    return;
-  }
-  isTrayOK = true;
-  tray = new Tray(path.join(localesPath, 'bin/static/logo/'+app.getName()+'.ico'));
-  const contextMenu = Menu.buildFromTemplate(
-    [
-      { label: '显示', click: () => { mainWindow.show(); } },
-      { label: '退出', click: () => { ExitApp() } }
-  ]);
-  // tray.setToolTip(app_config.app.ToolTip);
-  tray.setContextMenu(contextMenu);
-  
-  // 单击托盘图标显示窗口
-  tray.on('click', () => {
-    mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
-  });
-});
-
-const sockets = {};
-function testLatency(host, port, timeout, callback) {
-  const startTime = Date.now();
-  const socket = net.createConnection({ host, port });
-  sockets[host] = socket; // 使用编号作为键，存储连接对象
-
-  sockets[host].on('connect', () => {
-      const latency = Date.now() - startTime;
-      socket.destroy(); // 关闭连接
-      callback(null, latency, host, port);
-  });
-
-  sockets[host].on('error', (err) => {
-      callback(err, "unknown", host, port);
-  });
-}
-
-function Ping(host , timeout , C ,pingid){
+function Ping(host, timeout, pingid) {
 
   port = host.split(":")[1];
   host = host.split(":")[0];
-
-
-  // console.log(`TEST${host}:${port}`);
-
-  testLatency(host, port, timeout , (err, latency) => {
-    if (err) {
-        console.error('Error:', err);
-    } else {
-        // console.log(`350  Latency to ${host}:${port} is ${latency}ms`);
-        const ping_replydata = {
-          ms:latency,
-          pingid:pingid,
-          res:{
-            time:latency,
-            host:host
-          }
-        }
-        mainWindow.webContents.send('ping-reply', ping_replydata);
+  const startTime = Date.now();
+  var socket = net.createConnection({ host, port });
+  var ping_replydata = {
+    ms: 0,
+    pingid: pingid,
+    res: {
+      time: 0,
+      host: host
     }
+  }
+  socket.on('connect', () => {
+    const latency = Date.now() - startTime;
+    socket.destroy();
+    ping_replydata.ms = ping_replydata.res.time = latency;
+    mainWindow.webContents.send('ping-reply', ping_replydata);
   });
 
+  socket.on('error', (err) => {
+    console.error(`[Ping] ${err}`);
+    socket.destroy();
+  });
 }
 
-//TODO:FIX IT!
-ipcMain.on('ping', (event, arg) => {
+//TODO: FIX IT!
+ipcMain.on('ping', async (event, arg) => {
   // console.log(arg); // 打印消息
   host = arg.host;
   timeout = arg.timeout;
-  C = arg.C;
   pingid = arg.pingid;
-  Ping(host, timeout, C, pingid);
+  Ping(host, timeout, pingid);
 });
 
 
@@ -514,7 +310,8 @@ ipcMain.on('speed_code_config', (event, arg) => {
   }
   else if (arg.mode == "log") {
     //TODO:
-    mainWindow.webContents.send('speed_code', {"start":"log","log":null});
+    let LOG_CONTENT = fs.readFileSync(LOG_FILE_PATH,'utf8')
+    mainWindow.webContents.send('speed_code', { "start":"log", "log": LOG_CONTENT });
     return;
   }
 
@@ -709,8 +506,7 @@ ipcMain.on('batchRemoveHostRecords', (event, arg) => {
 // 平台加速
 ipcMain.on('host_speed_start', (event, arg) => {
   logger.info(`[host] 平台加速:服务已启动`);
-  
-  
+
   const gost_args = [
     '-api', '127.114.233.8:18080',
     '-metrics', '127.114.233.8:16088',
@@ -719,12 +515,11 @@ ipcMain.on('host_speed_start', (event, arg) => {
   ];
 
   const host_speed_gost_exe = execFile(path.join(localesPath, 'bin\\SpeedNet.exe') , gost_args);
-  
+
   // 监听子进程的标准输出数据
   host_speed_gost_exe.stdout.on('data', (data) => {
     logger.debug(`[host_speed_start] host speed: ${data}`);
   });
-  
 })
 
 ipcMain.on('socks_test', (event, arg) => {
