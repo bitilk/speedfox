@@ -8,6 +8,9 @@ const os = require('os');
 const request = require('request');
 const net = require('net');
 
+
+
+
 const {logger, LOG_FILE_PATH} = require('./helper/logger');
 
 var localesPath = process.cwd();
@@ -36,6 +39,7 @@ process.argv.forEach(function (item, index, array) {
 
 const {KillAllProcess, OpenExternalProgram} = require('./helper/process');
 const {batchAddHostRecords, batchRemoveHostRecords} = require('./helper/hosts');
+
 
 let loadWindow, mainWindow, tipsWindow = null;
 
@@ -297,6 +301,22 @@ function ExitApp() {
   mainWindow.webContents.send('app_', 'exit');
 
 }
+
+
+// 获取所有网络接口信息
+const networkInterfaces = os.networkInterfaces();
+
+Object.keys(networkInterfaces).forEach((iface) => {
+    console.log(`Interface: ${iface}`);
+    networkInterfaces[iface].forEach((details) => {
+        console.log(` - Family: ${details.family}`);
+        console.log(` - Address: ${details.address}`);
+        console.log(` - Internal: ${details.internal}`);
+        console.log('');
+    });
+});
+
+
 
 ipcMain.on('window', (event, arg) => {
   if (arg[0] == "ui") {
@@ -765,3 +785,64 @@ ipcMain.on('socks_connect_test', (event, arg) => {
     mainWindow.webContents.send('socks_connect_test', data);// 发送基座信息给渲染层
   });
 });
+
+
+
+//  网络探针部分，云端下发节点，用户测试延迟  //  
+//  Network_telemetry  测试版 24 08 14  FoxZai  // 
+const ping = require('ping');
+
+// ping测试
+ipcMain.on('Network_telemetry@ping', (event, arg) => {
+  Network_telemetry_pingHost(arg[0],arg[1]) // 传两个参数，一个任务id，一个ip
+});
+
+// tcping
+ipcMain.on('Network_telemetry@tcping', (event, arg) => {
+  Network_telemetry_tcpingHost(arg[0],arg[1]) // 传两个参数，一个任务id，一个ip
+});
+
+
+async function Network_telemetry_pingHost(task,host) {
+    const res = await ping.promise.probe(host);
+
+    res.output = ""
+
+
+    data = []
+    data[0] = task
+    data[1] = res
+    mainWindow.webContents.send('Network_telemetry@ping', data);// 发送基座信息给渲染层
+    // console.log(res);
+}
+
+function Network_telemetry_tcpingHost(task,host) {
+
+  port = host.split(":")[1];
+  host = host.split(":")[0];
+  const startTime = Date.now();
+  var socket = net.createConnection({ host, port });
+
+  socket.on('connect', () => {
+    const localIP = socket.localAddress;
+    const remoteIP = socket.remoteAddress;
+
+    const latency = Date.now() - startTime;
+    socket.destroy();
+
+    testdada = []
+    testdada[0] = latency
+    testdada[1] = remoteIP
+
+
+    data = []
+    data[0] = task
+    data[1] = testdada
+    mainWindow.webContents.send('Network_telemetry@tcping', data);// 发送基座信息给渲染层
+  });
+
+  socket.on('error', (err) => {
+    console.error(`[Ping] ${err}`);
+    socket.destroy();
+  });
+}
