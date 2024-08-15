@@ -44,6 +44,10 @@ npm run build
 ```
 npm run start 
 ```
+### 常见问题🤓☝️
+[为啥我运行 start.ps1 提示 无法加载文件XXXX因为在系统上禁止运行脚本](https://cn.bing.com/search?q=powershell%E7%A6%81%E6%AD%A2%E8%BF%90%E8%A1%8C%E8%84%9A%E6%9C%AC)
+
+
 
 ## 相关项目
 
@@ -69,8 +73,6 @@ npm run start
 </a>
 
 
-### 常见问题🤓☝️
-[为啥我运行 start.ps1 提示 无法加载文件XXXX因为在系统上禁止运行脚本](https://cn.bing.com/search?q=powershell%E7%A6%81%E6%AD%A2%E8%BF%90%E8%A1%8C%E8%84%9A%E6%9C%AC)
 
 
 ## 开源协议
